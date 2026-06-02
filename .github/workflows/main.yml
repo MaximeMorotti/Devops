@@ -6,7 +6,7 @@ on:
 
 jobs:
   # -------------------------------------------------------------
-  # 1. ÉTAPE D'EXÉCUTION DES TESTS BACKEND
+  # 1. ÉTAPE D'EXÉCUTION DES TESTS BACKEND (Tourne sur main ET develop)
   # -------------------------------------------------------------
   test-backend: 
     runs-on: ubuntu-24.04
@@ -22,7 +22,6 @@ jobs:
       - name: Run Backend Tests
         run: mvn -B clean verify --file TP01/backend/pom.xml
 
-      # On sauvegarde le dossier 'target' (contient les rapports de tests de couverture Jacoco)
       - name: Share test reports as artifact
         uses: actions/upload-artifact@v4
         with:
@@ -30,15 +29,15 @@ jobs:
           path: TP01/backend/target/
 
   # -------------------------------------------------------------
-  # 2. ÉTAPE D'ANALYSE SONAR (Séparée et dépendante des tests)
+  # 2. ÉTAPE D'ANALYSE SONAR (Tourne sur main ET develop)
   # -------------------------------------------------------------
   sonar-analysis:
-    needs: test-backend # Attend que les tests soient réussis
+    needs: test-backend
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # Historique Git complet pour Sonar
+          fetch-depth: 0 
 
       - name: Set up JDK 21
         uses: actions/setup-java@v4
@@ -46,7 +45,6 @@ jobs:
           java-version: '21'
           distribution: 'temurin'
 
-      # On télécharge le dossier 'target' généré par le job précédent
       - name: Download test reports
         uses: actions/download-artifact@v4
         with:
@@ -65,10 +63,11 @@ jobs:
           --file TP01/backend/pom.xml
 
   # -------------------------------------------------------------
-  # 3. ÉTAPES CD : BUILD & PUSH (Attendent la validation de Sonar)
+  # 3. ÉTAPES CD : BUILD & PUSH (UNIQUEMENT SUR LA BRANCHE MAIN)
   # -------------------------------------------------------------
   build-and-push-backend:
-    needs: sonar-analysis # Ne se lance QUE si Sonar donne son feu vert (Passed)
+    needs: sonar-analysis
+    if: github.ref == 'refs/heads/main' # <--- Sécurité : Ne se lance pas si on est sur develop
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
@@ -82,10 +81,11 @@ jobs:
         with:
           context: ./TP01/backend 
           tags: ${{ secrets.DOCKER_HUB_USERNAME }}/my-backend:latest
-          push: ${{ github.ref == 'refs/heads/main' }}
+          push: true # Toujours vrai ici, car le "if" plus haut garantit qu'on est sur main
 
   build-and-push-database:
     needs: sonar-analysis
+    if: github.ref == 'refs/heads/main' # <--- Sécurité
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
@@ -99,10 +99,11 @@ jobs:
         with:
           context: ./TP01/database 
           tags: ${{ secrets.DOCKER_HUB_USERNAME }}/my-database:latest
-          push: ${{ github.ref == 'refs/heads/main' }}
+          push: true
 
   build-and-push-httpd:
     needs: sonar-analysis
+    if: github.ref == 'refs/heads/main' # <--- Sécurité
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
@@ -116,4 +117,4 @@ jobs:
         with:
           context: ./TP01/httpd    
           tags: ${{ secrets.DOCKER_HUB_USERNAME }}/my-httpd:latest
-          push: ${{ github.ref == 'refs/heads/main' }}
+          push: true
