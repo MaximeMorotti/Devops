@@ -2,19 +2,20 @@ services:
   backend:
     build: ./backend
     networks:
-      - app-network
+      - ${APP_NETWORK}
+      - ${PROXY_NETWORK}
     depends_on:
       - database
     environment:
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://database:5432/db
+      - SPRING_DATASOURCE_URL=${SPRING_DATASOURCE_URL}
       - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER}
       - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASSWORD}
-    restart: unless-stopped
+    restart: on-failure:3
 
   database:
     build: ./database
     networks:
-      - app-network
+      - ${APP_NETWORK}
     environment:
       - POSTGRES_DB=${POSTGRES_DB}
       - POSTGRES_USER=${POSTGRES_USER}
@@ -28,13 +29,14 @@ services:
     ports:
       - "80:80"
     networks:
-      - app-network
+      - ${PROXY_NETWORK}
     depends_on:
       - backend
-    restart: unless-stopped
+    restart: no
 
 networks:
-  app-network:
+  ${APP_NETWORK}: #ne marche pas c'est normal il faut utiliser le generate_compose.ps1
+  ${PROXY_NETWORK}:
 
 volumes:
   postgres-data:
