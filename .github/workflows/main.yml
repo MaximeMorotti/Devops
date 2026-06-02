@@ -6,14 +6,12 @@ on:
 
 jobs:
   # -------------------------------------------------------------
-  # MISSION 1 : CI & ANALYSE QUALITY (S'exécute en premier)
+  # 1. ÉTAPE D'EXÉCUTION DES TESTS BACKEND
   # -------------------------------------------------------------
   test-backend: 
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0 
 
       - name: Set up JDK 21
         uses: actions/setup-java@v4
@@ -21,18 +19,45 @@ jobs:
           java-version: '21'
           distribution: 'temurin'
 
-      - name: Cache SonarCloud packages
-        uses: actions/cache@v4
-        with:
-          path: ~/.sonar/cache
-          key: ${{ runner.os }}-sonar
-          restore-keys: ${{ runner.os }}-sonar
+      - name: Run Backend Tests
+        run: mvn -B clean verify --file TP01/backend/pom.xml
 
-      - name: Build and analyze with Sonar
+      # On sauvegarde le dossier 'target' (contient les rapports de tests de couverture Jacoco)
+      - name: Share test reports as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-target-dir
+          path: TP01/backend/target/
+
+  # -------------------------------------------------------------
+  # 2. ÉTAPE D'ANALYSE SONAR (Séparée et dépendante des tests)
+  # -------------------------------------------------------------
+  sonar-analysis:
+    needs: test-backend # Attend que les tests soient réussis
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Historique Git complet pour Sonar
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      # On télécharge le dossier 'target' généré par le job précédent
+      - name: Download test reports
+        uses: actions/download-artifact@v4
+        with:
+          name: backend-target-dir
+          path: TP01/backend/target/
+
+      - name: Run SonarCloud Scanner
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: >
-          mvn -B verify sonar:sonar 
+          mvn sonar:sonar 
           -Dsonar.projectKey=MaximeMorotti_Devops
           -Dsonar.organization=maximemorotti 
           -Dsonar.host.url=https://sonarcloud.io 
@@ -40,11 +65,10 @@ jobs:
           --file TP01/backend/pom.xml
 
   # -------------------------------------------------------------
-  # MISSION 2 : CD - BUILD & PUSH EN PARALLÈLE
+  # 3. ÉTAPES CD : BUILD & PUSH (Attendent la validation de Sonar)
   # -------------------------------------------------------------
-
   build-and-push-backend:
-    needs: test-backend
+    needs: sonar-analysis # Ne se lance QUE si Sonar donne son feu vert (Passed)
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
@@ -61,7 +85,7 @@ jobs:
           push: ${{ github.ref == 'refs/heads/main' }}
 
   build-and-push-database:
-    needs: test-backend
+    needs: sonar-analysis
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
@@ -78,7 +102,7 @@ jobs:
           push: ${{ github.ref == 'refs/heads/main' }}
 
   build-and-push-httpd:
-    needs: test-backend
+    needs: sonar-analysis
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
