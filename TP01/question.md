@@ -57,3 +57,5 @@ Notre docker-compose.yml définit trois services :
 - httpd qui build l'image Apache, est le seul service à exposer un port vers l'extérieur (port 80) et dépend du backend. 
 
 Les trois services partagent le même réseau app-network pour communiquer entre eux, tandis que la DB et le backend ne sont pas accessibles depuis l'extérieur, ce qui est une bonne pratique de sécurité.
+
+test
