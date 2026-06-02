@@ -1,23 +1,67 @@
 name: CI devops 2025
 on:
   push:
-    branches: ["main", "develop"] # Déclenchement sur ces branches
+    branches: ["main", "develop"]
   pull_request:
 
 jobs:
+  # -------------------------------------------------------------
+  # DEBUT DE LA MISSION 1 : CI (Continuous Integration)
+  # -------------------------------------------------------------
   test-backend: 
     runs-on: ubuntu-24.04
     steps:
-      # 1. On récupère le code de ton dépôt
       - uses: actions/checkout@v4
 
-      # 2. On installe le JDK 21 (Temurin est une distribution standard très utilisée)
       - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
           java-version: '21'
           distribution: 'temurin'
 
-      # 3. On lance la compilation et les tests avec Maven
       - name: Build and test with Maven
         run: mvn clean verify --file TP01/backend/pom.xml
+
+  # -------------------------------------------------------------
+  # DEBUT DE LA MISSION 2 : CD (Continuous Delivery)
+  # -------------------------------------------------------------
+  build-and-push-docker-images:
+    needs: test-backend # Force ce job à attendre le succès absolu des tests du backend
+    runs-on: ubuntu-24.04
+
+    steps:
+      # 1. On récupère à nouveau le code
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 2. On se connecte à Docker Hub en utilisant les secrets configurés juste avant
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_TOKEN }}
+
+      # 3. Build & Push du Backend
+      - name: Build and push Backend
+        uses: docker/build-push-action@v6
+        with:
+          context: ./TP01/backend 
+          tags: ${{ secrets.DOCKER_HUB_USERNAME }}/tp01-backend:latest
+          # On ne push sur Docker Hub QUE si on est sur la branche main
+          push: ${{ github.ref == 'refs/heads/main' }}
+
+      # 4. Build & Push de la Database
+      - name: Build and push Database
+        uses: docker/build-push-action@v6
+        with:
+          context: ./TP01/database 
+          tags: ${{ secrets.DOCKER_HUB_USERNAME }}/tp01-database:latest
+          push: ${{ github.ref == 'refs/heads/main' }}
+
+      # 5. Build & Push de HTTPD (Frontend/Serveur Web)
+      - name: Build and push HTTPD
+        uses: docker/build-push-action@v6
+        with:
+          context: ./TP01/httpd    
+          tags: ${{ secrets.DOCKER_HUB_USERNAME }}/tp01-httpd:latest
+          push: ${{ github.ref == 'refs/heads/main' }}
