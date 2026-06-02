@@ -11,16 +11,37 @@ jobs:
   test-backend: 
     runs-on: ubuntu-24.04
     steps:
+      # 1. On récupère le code (ATTENTION au fetch-depth)
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Crucial pour Sonar : permet de récupérer tout l'historique Git pour le "code blame"
 
+      # 2. Configuration de Java
       - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
           java-version: '21'
           distribution: 'temurin'
 
-      - name: Build and test with Maven
-        run: mvn clean verify --file TP01/backend/pom.xml
+      # 3. [Optionnel mais recommandé] Cache pour accélérer Sonar
+      - name: Cache SonarCloud packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.sonar/cache
+          key: ${{ runner.os }}-sonar
+          restore-keys: ${{ runner.os }}-sonar
+
+      # 4. Build, Tests ET Analyse Sonar
+      - name: Build and analyze with Sonar
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Généré automatiquement par GitHub, rien à créer !
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}   # Le token secret récupéré sur Sonar
+        run: >
+          mvn -B verify sonar:sonar 
+          -Dsonar.projectKey=MaximeMorotti_Devops
+          -Dsonar.organization=maximemorotti 
+          -Dsonar.host.url=https://sonarcloud.io 
+          --file TP01/backend/pom.xml
 
   # -------------------------------------------------------------
   # DEBUT DE LA MISSION 2 : CD (Continuous Delivery)
