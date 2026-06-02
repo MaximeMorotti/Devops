@@ -33,7 +33,7 @@ Un reverse proxy est un serveur intermédiaire qui reçoit les requêtes des cli
 **Question 1-6 :** 
 Docker Compose est essentiel car il permet d'orchestrer plusieurs containers en une seule commande. Sans lui, il faudrait démarrer chaque container manuellement dans le bon ordre, créer les réseaux, attacher les volumes... ce qui est long et source d'erreurs. Avec un simple docker compose up, tous les services démarrent automatiquement dans le bon ordre, avec leurs configurations, réseaux et volumes. C'est aussi un fichier versionnable sur Git, ce qui rend le projet reproductible sur n'importe quelle machine par n'importe quel membre de l'équipe.
 
-**Question 1-7 :** 
+**Question 1-7 :**   i
 
 | Commande | Description |
 |---|---|
