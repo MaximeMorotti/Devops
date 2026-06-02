@@ -46,7 +46,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: ./TP01/backend 
-          tags: ${{ secrets.DOCKER_HUB_USERNAME }}/tp01-backend:latest
+          tags: ${{ secrets.DOCKER_HUB_USERNAME }}/my-backend:latest
           # On ne push sur Docker Hub QUE si on est sur la branche main
           push: ${{ github.ref == 'refs/heads/main' }}
 
@@ -55,7 +55,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: ./TP01/database 
-          tags: ${{ secrets.DOCKER_HUB_USERNAME }}/tp01-database:latest
+          tags: ${{ secrets.DOCKER_HUB_USERNAME }}/my-database:latest
           push: ${{ github.ref == 'refs/heads/main' }}
 
       # 5. Build & Push de HTTPD (Frontend/Serveur Web)
@@ -63,5 +63,5 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: ./TP01/httpd    
-          tags: ${{ secrets.DOCKER_HUB_USERNAME }}/tp01-httpd:latest
+          tags: ${{ secrets.DOCKER_HUB_USERNAME }}/my-httpd:latest
           push: ${{ github.ref == 'refs/heads/main' }}
