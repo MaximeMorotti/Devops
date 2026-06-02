@@ -6,24 +6,21 @@ on:
 
 jobs:
   # -------------------------------------------------------------
-  # DEBUT DE LA MISSION 1 : CI (Continuous Integration)
+  # MISSION 1 : CI & ANALYSE QUALITY (S'exécute en premier)
   # -------------------------------------------------------------
   test-backend: 
     runs-on: ubuntu-24.04
     steps:
-      # 1. On récupère le code (ATTENTION au fetch-depth)
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # Crucial pour Sonar : permet de récupérer tout l'historique Git pour le "code blame"
+          fetch-depth: 0 
 
-      # 2. Configuration de Java
       - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
           java-version: '21'
           distribution: 'temurin'
 
-      # 3. [Optionnel mais recommandé] Cache pour accélérer Sonar
       - name: Cache SonarCloud packages
         uses: actions/cache@v4
         with:
@@ -31,47 +28,48 @@ jobs:
           key: ${{ runner.os }}-sonar
           restore-keys: ${{ runner.os }}-sonar
 
-      # 4. Build, Tests ET Analyse Sonar
       - name: Build and analyze with Sonar
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Généré automatiquement par GitHub, rien à créer !
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}   # Le token secret récupéré sur Sonar
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: >
           mvn -B verify sonar:sonar 
           -Dsonar.projectKey=MaximeMorotti_Devops
           -Dsonar.organization=maximemorotti 
           -Dsonar.host.url=https://sonarcloud.io 
+          -Dsonar.login=${{ secrets.SONAR_TOKEN }}
           --file TP01/backend/pom.xml
 
   # -------------------------------------------------------------
-  # DEBUT DE LA MISSION 2 : CD (Continuous Delivery)
+  # MISSION 2 : CD - BUILD & PUSH EN PARALLÈLE
   # -------------------------------------------------------------
-  build-and-push-docker-images:
-    needs: test-backend # Force ce job à attendre le succès absolu des tests du backend
+
+  build-and-push-backend:
+    needs: test-backend
     runs-on: ubuntu-24.04
-
     steps:
-      # 1. On récupère à nouveau le code
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      # 2. On se connecte à Docker Hub en utilisant les secrets configurés juste avant
+      - uses: actions/checkout@v4
       - name: Login to Docker Hub
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKER_HUB_USERNAME }}
           password: ${{ secrets.DOCKER_HUB_TOKEN }}
-
-      # 3. Build & Push du Backend
       - name: Build and push Backend
         uses: docker/build-push-action@v6
         with:
           context: ./TP01/backend 
           tags: ${{ secrets.DOCKER_HUB_USERNAME }}/my-backend:latest
-          # On ne push sur Docker Hub QUE si on est sur la branche main
           push: ${{ github.ref == 'refs/heads/main' }}
 
-      # 4. Build & Push de la Database
+  build-and-push-database:
+    needs: test-backend
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_TOKEN }}
       - name: Build and push Database
         uses: docker/build-push-action@v6
         with:
@@ -79,7 +77,16 @@ jobs:
           tags: ${{ secrets.DOCKER_HUB_USERNAME }}/my-database:latest
           push: ${{ github.ref == 'refs/heads/main' }}
 
-      # 5. Build & Push de HTTPD (Frontend/Serveur Web)
+  build-and-push-httpd:
+    needs: test-backend
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_TOKEN }}
       - name: Build and push HTTPD
         uses: docker/build-push-action@v6
         with:
