@@ -20,4 +20,4 @@ jobs:
 
       # 3. On lance la compilation et les tests avec Maven
       - name: Build and test with Maven
-        run: mvn clean verify --file TP01\backend\pom.xml
+        run: mvn clean verify --file TP01/backend/pom.xml
