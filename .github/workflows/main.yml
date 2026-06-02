@@ -84,7 +84,6 @@ jobs:
           push: true # Toujours vrai ici, car le "if" plus haut garantit qu'on est sur main
 
   build-and-push-database:
-    needs: sonar-analysis
     if: github.ref == 'refs/heads/main' # <--- Sécurité
     runs-on: ubuntu-24.04
     steps:
@@ -102,7 +101,6 @@ jobs:
           push: true
 
   build-and-push-httpd:
-    needs: sonar-analysis
     if: github.ref == 'refs/heads/main' # <--- Sécurité
     runs-on: ubuntu-24.04
     steps:
