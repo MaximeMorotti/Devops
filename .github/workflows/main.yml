@@ -63,11 +63,11 @@ jobs:
           --file TP01/backend/pom.xml
 
   # -------------------------------------------------------------
-  # 3. ÉTAPES CD : BUILD & PUSH (UNIQUEMENT SUR LA BRANCHE MAIN)
+  # 3. ÉTAPES CD : BUILD & PUSH VERSIONNÉS
   # -------------------------------------------------------------
   build-and-push-backend:
     needs: sonar-analysis
-    if: github.ref == 'refs/heads/main' # <--- Sécurité : Ne se lance pas si on est sur develop
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
@@ -80,11 +80,14 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: ./TP01/backend 
-          tags: ${{ secrets.DOCKER_HUB_USERNAME }}/my-backend:latest
-          push: true # Toujours vrai ici, car le "if" plus haut garantit qu'on est sur main
+          push: true
+          # Le symbole "|" permet de lister plusieurs tags à la suite
+          tags: |
+            ${{ secrets.DOCKER_HUB_USERNAME }}/my-backend:latest
+            ${{ secrets.DOCKER_HUB_USERNAME }}/my-backend:${{ github.sha }}
 
   build-and-push-database:
-    if: github.ref == 'refs/heads/main' # <--- Sécurité
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
@@ -97,11 +100,13 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: ./TP01/database 
-          tags: ${{ secrets.DOCKER_HUB_USERNAME }}/my-database:latest
           push: true
+          tags: |
+            ${{ secrets.DOCKER_HUB_USERNAME }}/my-database:latest
+            ${{ secrets.DOCKER_HUB_USERNAME }}/my-database:${{ github.sha }}
 
   build-and-push-httpd:
-    if: github.ref == 'refs/heads/main' # <--- Sécurité
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
@@ -114,5 +119,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: ./TP01/httpd    
-          tags: ${{ secrets.DOCKER_HUB_USERNAME }}/my-httpd:latest
           push: true
+          tags: |
+            ${{ secrets.DOCKER_HUB_USERNAME }}/my-httpd:latest
+            ${{ secrets.DOCKER_HUB_USERNAME }}/my-httpd:${{ github.sha }}
