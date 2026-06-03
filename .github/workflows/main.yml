@@ -105,7 +105,7 @@ jobs:
             ${{ secrets.DOCKER_HUB_USERNAME }}/my-httpd:latest
             ${{ secrets.DOCKER_HUB_USERNAME }}/my-httpd:${{ github.sha }}
 
-  # 4. ÉTAPE DE DÉPLOIEMENT (Indentation corrigée)
+# 4. ÉTAPE DE DÉPLOIEMENT
   deploy:
     needs: [build-and-push-backend, build-and-push-database, build-and-push-httpd]
     if: github.ref == 'refs/heads/main'
@@ -113,12 +113,20 @@ jobs:
     environment: Production
     steps:
       - uses: actions/checkout@v4
+      
       - name: Setup SSH
         run: |
           mkdir -p ~/.ssh
-          # On écrit le contenu du secret DANS le fichier id_rsa
           echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
+
+      # Solution de sécurité : On recrée le dossier et le fichier .env à partir du secret
+      - name: Create .env file dynamically
+        run: |
+          mkdir -p TP01
+          echo "${{ secrets.ENV_FILE_CONTENT }}" > TP01/.env
+          chmod 600 TP01/.env
+          
       - name: Run Ansible Playbook
         run: |
           pip install ansible
