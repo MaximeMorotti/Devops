@@ -6,7 +6,7 @@
   pre_tasks:
     - name: Copy .env file from TP01 to the remote server
       copy:
-        src: TP01/.env
+        src: ./TP01/.env
         dest: /opt/.env
         mode: '0600'
 
@@ -15,4 +15,5 @@
     - network
     - database
     - app
+    - front
     - proxy
