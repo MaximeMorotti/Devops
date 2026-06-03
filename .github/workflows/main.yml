@@ -1,12 +1,11 @@
-name: CI/CD Pipeline
-
+name: CI devops 2025
 on:
   push:
     branches: ["main", "develop"]
   pull_request:
 
 jobs:
-  # 1. ÉTAPE D'EXÉCUTION DES TESTS
+  # 1. ÉTAPE D'EXÉCUTION DES TESTS BACKEND
   test-backend: 
     runs-on: ubuntu-24.04
     steps:
@@ -51,14 +50,11 @@ jobs:
           -Dsonar.login=${{ secrets.SONAR_TOKEN }}
           --file TP01/backend/pom.xml
 
-  # 3. ÉTAPES CD : BUILD & PUSH
-  build-and-push:
+  # 3. ÉTAPES CD : BUILD & PUSH (Tes jobs originaux)
+  build-and-push-backend:
     needs: sonar-analysis
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
-    strategy:
-      matrix:
-        service: [backend, database, httpd]
     steps:
       - uses: actions/checkout@v4
       - uses: docker/login-action@v3
@@ -67,23 +63,57 @@ jobs:
           password: ${{ secrets.DOCKER_HUB_TOKEN }}
       - uses: docker/build-push-action@v6
         with:
-          context: ./TP01/${{ matrix.service }}
+          context: ./TP01/backend 
           push: true
           tags: |
-            ${{ secrets.DOCKER_HUB_USERNAME }}/my-${{ matrix.service }}:latest
-            ${{ secrets.DOCKER_HUB_USERNAME }}/my-${{ matrix.service }}:${{ github.sha }}
+            ${{ secrets.DOCKER_HUB_USERNAME }}/my-backend:latest
+            ${{ secrets.DOCKER_HUB_USERNAME }}/my-backend:${{ github.sha }}
 
-  # 4. ÉTAPE DE DÉPLOIEMENT (Manual Approval)
-  deploy:
-    needs: build-and-push
+  build-and-push-database:
+    needs: sonar-analysis
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
-    environment: Production # <--- C'est ici que tu configures la validation manuelle
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_TOKEN }}
+      - uses: docker/build-push-action@v6
+        with:
+          context: ./TP01/database 
+          push: true
+          tags: |
+            ${{ secrets.DOCKER_HUB_USERNAME }}/my-database:latest
+            ${{ secrets.DOCKER_HUB_USERNAME }}/my-database:${{ github.sha }}
+
+  build-and-push-httpd:
+    needs: sonar-analysis
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_TOKEN }}
+      - uses: docker/build-push-action@v6
+        with:
+          context: ./TP01/httpd    
+          push: true
+          tags: |
+            ${{ secrets.DOCKER_HUB_USERNAME }}/my-httpd:latest
+            ${{ secrets.DOCKER_HUB_USERNAME }}/my-httpd:${{ github.sha }}
+
+  # 4. ÉTAPE DE DÉPLOIEMENT (Nouvelle fonction ajoutée)
+  deploy:
+    needs: [build-and-push-backend, build-and-push-database, build-and-push-httpd]
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    environment: Production
     steps:
       - uses: actions/checkout@v4
       - name: Run Ansible Playbook
         run: |
-          # Installation d'Ansible et exécution
           pip install ansible
-          ansible-playbook -i inventories/setup.yml playbook.yml \
-          -e "ansible_ssh_private_key_file=./id_rsa" # Assure-toi d'avoir ta clé SSH en secret
+          ansible-playbook -i inventories/setup.yml playbook.yml
