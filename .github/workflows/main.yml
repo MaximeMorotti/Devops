@@ -120,6 +120,7 @@ jobs:
         with:
           context: ./TP01/httpd/devops-front-main
           push: true
+          no-cache: true
           tags: |
             ${{ secrets.DOCKER_HUB_USERNAME }}/my-front:latest
             ${{ secrets.DOCKER_HUB_USERNAME }}/my-front:${{ github.sha }}
