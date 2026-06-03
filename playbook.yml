@@ -1,0 +1,18 @@
+- hosts: all
+  gather_facts: true
+  become: true
+
+  # pre_tasks est garanti s'exécuter AVANT les rôles
+  pre_tasks:
+    - name: Copy .env file from TP01 to the remote server
+      copy:
+        src: TP01/.env
+        dest: /opt/.env
+        mode: '0600'
+
+  roles:
+    - docker
+    - network
+    - database
+    - app
+    - proxy
