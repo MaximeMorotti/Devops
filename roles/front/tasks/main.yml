@@ -1,7 +1,7 @@
 - name: Run Front-end Container
   docker_container:
     name: front
-    image: "mmorotti/my-front:latest"
+    image: mmorotti/my-front:latest
     networks:
       - name: app-network
     restart_policy: always
