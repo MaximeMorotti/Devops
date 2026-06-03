@@ -105,14 +105,22 @@ jobs:
             ${{ secrets.DOCKER_HUB_USERNAME }}/my-httpd:latest
             ${{ secrets.DOCKER_HUB_USERNAME }}/my-httpd:${{ github.sha }}
 
-  # 4. ÉTAPE DE DÉPLOIEMENT (Nouvelle fonction ajoutée)
-  deploy:
+# 4. ÉTAPE DE DÉPLOIEMENT
+deploy:
     needs: [build-and-push-backend, build-and-push-database, build-and-push-httpd]
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
     environment: Production
     steps:
       - uses: actions/checkout@v4
+      
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          # On écrit le secret dans le fichier attendu par ton inventaire
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          
       - name: Run Ansible Playbook
         run: |
           pip install ansible
