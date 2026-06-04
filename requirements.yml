@@ -1,0 +1,4 @@
+---
+roles:
+  - name: cloudalchemy.grafana
+    version: 0.16.2 # Optional, but good practice to pin. 

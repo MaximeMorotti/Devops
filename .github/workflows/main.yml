@@ -162,4 +162,5 @@ jobs:
       - name: Run Ansible Playbook
         run: |
           pip install ansible
+          ansible-galaxy install -r requirements.yml
           ansible-playbook -i inventories/setup.yml playbook.yml

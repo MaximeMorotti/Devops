@@ -1,10 +1,13 @@
 - name: Launch App Container
   docker_container:
-    name: backend
+    name: "{{ item }}"
     image: mmorotti/my-backend:latest
     networks:
       - name: app-network
     env_file: /opt/.env
     restart_policy: always
+  loop:
+    - backend-1
+    - backend-2
   vars:
     ansible_python_interpreter: /opt/docker_venv/bin/python
