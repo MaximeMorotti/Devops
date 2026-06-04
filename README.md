@@ -47,6 +47,33 @@ Afin d'automatiser la chaîne de développement, un pipeline complet a été mis
 
 3. **Déploiement Continu (CD) et Publication**
    - L'architecture du pipeline est modulaire (`needs: test-backend`). Si et seulement si la compilation, les tests et l'analyse qualité sont concluants, le pipeline déclenche la construction des images Docker.
-   - Les images (backend, base de données, httpd) sont générées, taguées et poussées automatiquement vers un registre distant (**Docker Hub**).
+   - Les images (backend, base de données, httpd, front) sont générées, taguées et poussées automatiquement vers un registre distant (**Docker Hub**).
    - Ces images finalisées peuvent ensuite être facilement récupérées pour être déployées sur un serveur.
-   - **Sécurité** : Tous les accès sensibles (les tokens SonarCloud et les identifiants Docker Hub) sont stockés de manière chiffrée en utilisant les *Secrets* de Github.
+   - **Sécurité** : Tous les accès sensibles (les tokens SonarCloud, clés SSH et les identifiants Docker Hub) sont stockés de manière chiffrée en utilisant les *Secrets* de Github.
+
+---
+
+## Déploiement Automatisé avec Ansible (TP03)
+
+La dernière étape du projet consiste à automatiser le déploiement de toute l'infrastructure sur un serveur de production grâce à **Ansible**, un outil de gestion de configuration par code (IaC). Au lieu de lancer des commandes manuellement sur le serveur, Ansible s'assure que l'état du serveur correspond à ce qui est défini dans nos "playbooks" et "rôles".
+
+### Fonctionnalités ajoutées
+
+1. **Déploiement complet via CI/CD**
+   - Une fois les images Docker construites et publiées sur le Docker Hub, le workflow GitHub Actions se connecte en SSH au serveur de production.
+   - Il installe les dépendances nécessaires et exécute notre `playbook.yml` Ansible.
+   - Les rôles Ansible s'assurent que Docker est installé, que le réseau privé est créé, et que tous nos conteneurs (Database, API, Front, Proxy) sont lancés avec les bonnes variables d'environnement.
+
+2. **Load Balancing (Répartition de charge)**
+   - **Définition** : Le *Load Balancing* est une technique permettant de distribuer le trafic réseau entrant sur plusieurs serveurs (ou instances) de traitement. Cela évite qu'un seul serveur ne soit surchargé, améliore les temps de réponse et assure une haute disponibilité (si un serveur tombe en panne, le trafic est redirigé vers les autres).
+   - **Implémentation** : Au lieu de déployer un seul conteneur pour l'API, notre rôle Ansible `app` déploie maintenant deux instances de l'API (`backend-1` et `backend-2`).
+   - Le proxy Apache (`httpd`) a été mis à jour avec l'activation du module `mod_proxy_balancer`. Il intercepte les requêtes `/api` et les répartit équitablement (via un *cluster balancer*) entre `backend-1` et `backend-2`.
+
+3. **Supervision avec Grafana**
+   - **Définition** : *Grafana* est une plateforme open-source d'analyse et de visualisation de données. Elle permet de créer des tableaux de bord dynamiques pour surveiller la santé des systèmes (utilisation CPU, RAM, trafic réseau, etc.) via la collecte de métriques.
+   - **Implémentation** : Nous avons utilisé le rôle officiel fourni par la communauté Ansible (`grafana.grafana`) via la commande `ansible-galaxy collection install`. L'intégration de cette collection dans notre playbook automatise l'installation et la configuration de Grafana nativement sur le serveur hôte, fournissant une interface web (port 3000 par défaut) avec un compte administrateur sécurisé.
+
+> [!WARNING]
+> **Problème de validation (Erreur Serveur)**  
+> Lors de la validation de notre workflow CI/CD final, le déploiement a été interrompu par une erreur réseau totalement hors de notre contrôle : `Failed to connect to the host via ssh: Connection timed out during banner exchange`. 
+> Le serveur de production (fourni pour le projet) étant temporairement inaccessible, le déploiement continu n'a pas pu s'exécuter jusqu'au bout. La configuration (playbook Ansible, Load balancing, Grafana, secrets GitHub) est complète et prête à fonctionner dès que le serveur sera de nouveau en ligne.
