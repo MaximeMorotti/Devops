@@ -17,4 +17,8 @@
     - app
     - front
     - proxy
-    - grafana.grafana.grafana
+    - role: grafana.grafana.grafana
+      vars:
+        grafana_security:
+          admin_user: admin
+          admin_password: admin
