@@ -2,5 +2,4 @@
 collections:
   - name: community.general
 roles:
-  - name: cloudalchemy.grafana
-    version: ">=0.15.0"
+  - name: grafana.grafana
